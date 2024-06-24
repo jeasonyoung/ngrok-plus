@@ -1,3 +1,7 @@
-go 1.21
+go 1.21.3
 
-use ngrok-common
+use (
+	./ngrok-client
+	./ngrok-common
+	./ngrok-server
+)
