@@ -5,9 +5,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"ngrok-common/conn"
 )
 
-func readMsgShared(c service.ConnService) (buffer []byte, err error) {
+func readMsgShared(c conn.Conn) (buffer []byte, err error) {
 	c.Debug(context.TODO(), "Waiting to read message")
 	var sz int64
 	if err = binary.Read(c, binary.LittleEndian, &sz); err != nil {
@@ -29,7 +30,7 @@ func readMsgShared(c service.ConnService) (buffer []byte, err error) {
 }
 
 // ReadMsg 读取消息
-func ReadMsg(c service.ConnService) (msg Message, err error) {
+func ReadMsg(c conn.Conn) (msg Message, err error) {
 	var buf []byte
 	if buf, err = readMsgShared(c); err != nil {
 		return
@@ -38,7 +39,7 @@ func ReadMsg(c service.ConnService) (msg Message, err error) {
 }
 
 // ReadMsgInfo 读取消息
-func ReadMsgInfo(c service.ConnService, msg Message) (err error) {
+func ReadMsgInfo(c conn.Conn, msg Message) (err error) {
 	var buf []byte
 	if buf, err = readMsgShared(c); err != nil {
 		return
@@ -46,7 +47,8 @@ func ReadMsgInfo(c service.ConnService, msg Message) (err error) {
 	return UnpackInto(buf, msg)
 }
 
-func WriteMsg(c service.ConnService, msg interface{}) (err error) {
+// WriteMsg 写入消息
+func WriteMsg(c conn.Conn, msg interface{}) (err error) {
 	var buf []byte
 	if buf, err = Pack(msg); err != nil {
 		return
