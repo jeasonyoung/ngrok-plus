@@ -6,6 +6,7 @@ import (
 )
 
 type Tee interface {
+	Conn
 	ReadBuffer() *bufio.Reader
 	WriteBuffer() *bufio.Reader
 	Read(b []byte) (n int, err error)
