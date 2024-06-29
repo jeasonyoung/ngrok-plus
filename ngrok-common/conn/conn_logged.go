@@ -2,26 +2,24 @@ package conn
 
 import (
 	"bufio"
-	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/gogf/gf/v2/frame/g"
-	"github.com/gogf/gf/v2/os/glog"
 	vhost "github.com/inconshreveable/go-vhost"
 	"io"
 	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
+	"ngrok-common/log"
 	"sync"
 )
 
 type loggedConn struct {
 	tcp *net.TCPConn
 	net.Conn
-	glog.ILogger
+	log.Logger
 	id  int32
 	typ string
 }
@@ -30,13 +28,12 @@ func wrapConn(rawConn net.Conn, typ string) Conn {
 	switch c := rawConn.(type) {
 	case *vhost.HTTPConn:
 		wrapped := c.Conn.(*loggedConn)
-		return &loggedConn{wrapped.tcp, rawConn, wrapped.ILogger, wrapped.id, wrapped.typ}
+		return &loggedConn{wrapped.tcp, rawConn, wrapped.Logger, wrapped.id, wrapped.typ}
 	case *loggedConn:
 		return c
 	case *net.TCPConn:
-		id := rand.Int31()
-		logger := g.Log(fmt.Sprintf("%s:%x", typ, id))
-		wrapped := &loggedConn{c, rawConn, logger, id, typ}
+		wrapped := &loggedConn{c, rawConn, log.NewPrefixLogger(), rand.Int31(), typ}
+		wrapped.AddLogPrefix(wrapped.Id())
 		return wrapped
 	}
 	return nil
@@ -62,14 +59,14 @@ func Listen(addr, typ string, tlsCfg *tls.Config) (l *Listener, err error) {
 		for {
 			rawConn, _err := listener.Accept()
 			if _err != nil {
-				g.Log().Errorf(context.Background(), "Failed to accept new TCP connection of type %s:%v", typ, _err)
+				_ = log.Error("Failed to accept new TCP connection of type %s:%v", typ, _err)
 				continue
 			}
 			c := wrapConn(rawConn, typ).(*loggedConn)
 			if tlsCfg != nil {
 				c.Conn = tls.Server(c.Conn, tlsCfg)
 			}
-			c.Infof(context.TODO(), "New connection from %v", c.RemoteAddr())
+			c.Info("New connection from %v", c.RemoteAddr())
 			l.Connections <- c
 		}
 	}()
@@ -83,7 +80,7 @@ func Dial(addr, typ string, tlsCfg *tls.Config) (s Conn, err error) {
 		return
 	}
 	s = wrapConn(rawConn, typ)
-	s.Debugf(context.TODO(), "New connection to: %v", rawConn.RemoteAddr())
+	s.Debug("New connection to: %v", rawConn.RemoteAddr())
 	if tlsCfg != nil {
 		s.StartTLS(tlsCfg)
 	}
@@ -109,7 +106,7 @@ func DialHttpProxy(proxyUrl, addr, typ string, tlsCfg *tls.Config) (s Conn, err 
 	case "https":
 		proxyTlsConfig = new(tls.Config)
 	default:
-		err = errors.New(fmt.Sprintf("Proxy URL scheme must be http or https, got: %s", parsedUrl.Scheme))
+		err = fmt.Errorf("proxy URL scheme must be http or https, got: %s", parsedUrl.Scheme)
 		return
 	}
 	// dial the proxy
@@ -160,15 +157,15 @@ func Join(c1 Conn, c2 Conn) (fromBytes, toBytes int64) {
 		//
 		var err error
 		if *bytesCopied, err = io.Copy(to, from); err != nil {
-			from.Warningf(context.TODO(), "Copied %d bytes to %s before failing with error %v", *bytesCopied, to.Id(), err)
+			_ = from.Warn("Copied %d bytes to %s before failing with error %v", *bytesCopied, to.Id(), err)
 		} else {
-			from.Debugf(context.TODO(), "Copied %d bytes to %s", *bytesCopied, to.Id())
+			from.Debug("Copied %d bytes to %s", *bytesCopied, to.Id())
 		}
 	}
 	wait.Add(2)
 	go pipe(c1, c2, &fromBytes)
 	go pipe(c2, c1, &toBytes)
-	c1.Infof(context.TODO(), "Joined with connection %s", c2.Id())
+	c1.Info("Joined with connection %s", c2.Id())
 	wait.Wait()
 	return
 }
@@ -178,8 +175,8 @@ func (c *loggedConn) StartTLS(tlsCfg *tls.Config) {
 }
 
 func (c *loggedConn) Close() (err error) {
-	if err := c.Conn.Close(); err == nil {
-		g.Log().Debug(context.Background(), "Closing")
+	if err = c.Conn.Close(); err == nil {
+		c.Debug("Closing")
 	}
 	return
 }
@@ -191,7 +188,7 @@ func (c *loggedConn) Id() string {
 func (c *loggedConn) SetType(typ string) {
 	oldId := c.id
 	c.typ = typ
-	c.Infof(context.TODO(), "Renamed connection %s", oldId)
+	c.Info("Renamed connection %s", oldId)
 }
 
 func (c *loggedConn) CloseRead() error {

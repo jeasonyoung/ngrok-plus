@@ -12,7 +12,7 @@ func init() {
 	t := func(obj interface{}) reflect.Type {
 		return reflect.TypeOf(obj).Elem()
 	}
-	TypeMap["AuthReq"] = t((*AuthReq)(nil))
+	TypeMap["Auth"] = t((*Auth)(nil))
 	TypeMap["AuthRes"] = t((*AuthRes)(nil))
 	TypeMap["ReqTunnel"] = t((*ReqTunnel)(nil))
 	TypeMap["NewTunnel"] = t((*NewTunnel)(nil))
@@ -32,9 +32,9 @@ type Envelope struct {
 	Payload json.RawMessage
 }
 
-// AuthReq When a client opens a new control channel to the server
+// Auth When a client opens a new control channel to the server
 // it must start by sending an AuthReq message.
-type AuthReq struct {
+type Auth struct {
 	Version   string //protocol version
 	MmVersion string //major/minor software version(informational only)
 	User      string
@@ -81,8 +81,8 @@ type ReqTunnel struct {
 // ReqId is the ReqId from the corresponding ReqTunnel message.
 //
 // A client may receive *multiple* NewTunnel messages from a single
-// ReqTunnel. (ex. A client opens an https tunnel and the server
-// chooses to open an http tunnel of the same name as well)
+// ReqTunnel. (ex. A client opens https tunnel and the server
+// chooses to open http tunnel of the same name as well)
 type NewTunnel struct {
 	ReqId    string
 	Url      string

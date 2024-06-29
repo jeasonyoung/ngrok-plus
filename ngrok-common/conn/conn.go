@@ -2,14 +2,14 @@ package conn
 
 import (
 	"crypto/tls"
-	"github.com/gogf/gf/v2/os/glog"
 	"net"
+	"ngrok-common/log"
 )
 
 // Conn 连接接口
 type Conn interface {
 	net.Conn
-	glog.ILogger
+	log.Logger
 	// Id 链接ID
 	Id() string
 	// SetType 设置类型

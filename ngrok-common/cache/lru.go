@@ -93,7 +93,7 @@ func (lru *lruCache) SaveItemsToFile(path string) error {
 func (lru *lruCache) SetCapacity(capacity uint64) {
 	lru.mu.Lock()
 	defer lru.mu.Unlock()
-
+	//
 	lru.capacity = capacity
 	lru.checkCapacity()
 }
@@ -163,14 +163,14 @@ func (lru *lruCache) SetIfAbsent(key string, value Value) {
 func (lru *lruCache) Delete(key string) bool {
 	lru.mu.Lock()
 	defer lru.mu.Unlock()
-
+	//
 	elem := lru.table[key]
 	if elem == nil {
 		return false
 	}
 	lru.list.Remove(elem)
 	delete(lru.table, key)
-
+	//
 	lru.size -= uint64(elem.Value.(*entry).size)
 	return true
 }

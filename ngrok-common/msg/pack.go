@@ -2,7 +2,6 @@ package msg
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -15,7 +14,7 @@ func unpack(buffer []byte, msgIn Message) (msg Message, err error) {
 	if msgIn == nil {
 		t, ok := TypeMap[env.Type]
 		if !ok {
-			err = errors.New(fmt.Sprintf("Unsupported message type %s", env.Type))
+			err = fmt.Errorf("unsupported message type %s", env.Type)
 			return
 		}
 		//guess type

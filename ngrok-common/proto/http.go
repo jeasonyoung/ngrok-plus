@@ -85,7 +85,7 @@ func (h *Http) readRequests(tee conn.Tee, lastTxn chan *HttpTxn, connCtx interfa
 		_, err = httputil.DumpRequest(req, true)
 		h.reqMeter.Mark(1)
 		if err != nil {
-			tee.Warningf(context.TODO(), "Failed to extract request body: %v", err)
+			_ = tee.Warn("Failed to extract request body: %v", err)
 		}
 		// golang's ReadRequest/DumpRequestOut is broken.Fix up the request so it works later
 		req.URL.Scheme = "http"
@@ -96,7 +96,7 @@ func (h *Http) readRequests(tee conn.Tee, lastTxn chan *HttpTxn, connCtx interfa
 		if req.Body != nil {
 			txn.Req.BodyBytes, txn.Req.Body, err = extractBody(req.Body)
 			if err != nil {
-				tee.Warningf(context.TODO(), "Failed to extract request body: %v", err)
+				_ = tee.Warn("Failed to extract request body: %v", err)
 			}
 		}
 		lastTxn <- txn
@@ -110,7 +110,7 @@ func (h *Http) readResponses(tee conn.Tee, lastTxn chan *HttpTxn) {
 		txn.Duration = time.Since(txn.Start)
 		h.reqTimer.Update(txn.Duration)
 		if err != nil {
-			tee.Warningf(context.TODO(), "Error reading response from server: %v", err)
+			_ = tee.Warn("Error reading response from server: %v", err)
 			// no more responses to be read,we're done
 			break
 		}
@@ -121,13 +121,13 @@ func (h *Http) readResponses(tee conn.Tee, lastTxn chan *HttpTxn) {
 		if res.Body != nil {
 			txn.Res.BodyBytes, txn.Res.Body, err = extractBody(res.Body)
 			if err != nil {
-				tee.Warningf(context.TODO(), "Failed to extract response body: %v", err)
+				_ = tee.Warn("Failed to extract response body: %v", err)
 			}
 		}
 		h.Txns.In() <- txn
 		// XXX: remove web socket shim in favor of a real websocket protocol analyzer
 		if txn.Req.Header.Get("Upgrade") == "websocket" {
-			tee.Info(context.TODO(), "Upgrading to websocket")
+			tee.Info("Upgrading to websocket")
 			var wg sync.WaitGroup
 			// shim for websockets
 			wg.Add(2)
