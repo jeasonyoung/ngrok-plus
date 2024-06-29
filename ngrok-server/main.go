@@ -2,12 +2,9 @@ package main
 
 import (
 	_ "ngrok-server/internal/packed"
-
-	"github.com/gogf/gf/v2/os/gctx"
-
-	"ngrok-server/internal/cmd"
+	"ngrok-server/internal/service"
 )
 
 func main() {
-	cmd.Main.Run(gctx.GetInitCtx())
+	service.Main()
 }
